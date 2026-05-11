@@ -20,7 +20,12 @@ export default function WorkspacePage({ params }: PageProps) {
   const searchParams = useSearchParams();
   const issueParam = searchParams.get("issue");
 
-  const { newsletters, updateIssueSections, renameNewsletter } = useWorkspace();
+  const {
+    newsletters,
+    updateIssueContent,
+    restoreIssueContent,
+    renameNewsletter,
+  } = useWorkspace();
   const [sourcesOpen, setSourcesOpen] = useState(true);
   const [studioOpen, setStudioOpen] = useState(true);
 
@@ -91,9 +96,12 @@ export default function WorkspacePage({ params }: PageProps) {
           <IssueDocument
             newsletter={newsletter}
             issue={currentIssue}
-            sections={currentIssue.sections ?? []}
-            onSectionsChange={(next) =>
-              updateIssueSections(newsletter.id, currentIssue.id, next)
+            content={currentIssue.content ?? ""}
+            onContentChange={(next) =>
+              updateIssueContent(newsletter.id, currentIssue.id, next)
+            }
+            onRestoreVersion={(entryId) =>
+              restoreIssueContent(newsletter.id, currentIssue.id, entryId)
             }
             readOnly={readOnly}
           />

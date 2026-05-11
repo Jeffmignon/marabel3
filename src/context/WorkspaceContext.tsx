@@ -21,24 +21,11 @@ export interface Schedule {
   active: boolean;
 }
 
-export interface DocSource {
-  id: number;
-  name: string;
-  url: string;
-}
-
-export interface DocParagraph {
+export interface EditEntry {
   id: string;
-  body: string;
-  cites: number[];
-}
-
-export interface DocSection {
-  id: string;
-  label: string;
-  headline: string;
-  paragraphs: DocParagraph[];
-  sources: DocSource[];
+  timestamp: string; // ISO
+  content: string;   // snapshot of the content as it was BEFORE this edit
+  editedBy: string;  // "You" / "Marabel" — display label only
 }
 
 export interface Issue {
@@ -46,7 +33,12 @@ export interface Issue {
   name: string;
   status: "draft" | "in_progress" | "published" | "archived";
   date?: string;
-  sections?: DocSection[];
+  /** Newsletter body, as one markdown string. */
+  content?: string;
+  /** Previous versions, oldest first. The current `content` is not in this array. */
+  contentHistory?: EditEntry[];
+  /** ISO timestamp of the last edit (by a human); undefined if never edited. */
+  contentEditedAt?: string;
   // 0 = drafting (not yet submitted)
   // 1..reviewers.length = at that reviewer's step
   // reviewers.length + 1 = past final approver, ready to push
@@ -228,77 +220,52 @@ const initialNewsletters: Newsletter[] = [
         status: "in_progress",
         date: "Apr 22, 2026",
         approvalStep: 0,
-        sections: [
-          {
-            id: "brief",
-            label: "The Brief",
-            headline: "Five AI trends reshaping B2B marketing in 2026",
-            paragraphs: [
-              {
-                id: "b1",
-                body: "Marketing teams that adopted generative AI in 2024 are now seeing the second-order effects: workflows compress, attribution gets messier, and budget moves from media to model fine-tuning.",
-                cites: [1, 2],
-              },
-              {
-                id: "b2",
-                body: "The teams winning right now are the ones who treated their first-party data like a moat — and the ones who didn't are quietly being lapped.",
-                cites: [3],
-              },
-            ],
-            sources: [
-              { id: 1, name: "TechCrunch — AI Marketing Report", url: "techcrunch.com" },
-              { id: 2, name: "HBR — Generative Marketing", url: "hbr.org" },
-              { id: 3, name: "Forrester — First-Party Data 2026", url: "forrester.com" },
-            ],
-          },
-          {
-            id: "field",
-            label: "Field Notes",
-            headline: "What we're seeing in the wild",
-            paragraphs: [
-              {
-                id: "f1",
-                body: "Three customer conversations this week kept circling back to one question: how do you keep a brand voice consistent when half your content is being drafted by a model?",
-                cites: [4],
-              },
-            ],
-            sources: [{ id: 4, name: "Internal — Customer Calls W16", url: "drive/notes" }],
-          },
-          {
-            id: "beyond",
-            label: "Beyond the Stack",
-            headline: "Privacy-first analytics is finally getting interesting",
-            paragraphs: [
-              {
-                id: "p1",
-                body: "A handful of teams have moved off third-party tracking entirely. The reporting is messier, but the conversion lift on cookie-skeptical segments is real.",
-                cites: [5],
-              },
-            ],
-            sources: [{ id: 5, name: "Wired — Analytics 2026", url: "wired.com" }],
-          },
-        ],
+        content: `**THE BRIEF**
+
+## Five AI trends reshaping B2B marketing in 2026
+
+Marketing teams that adopted generative AI in 2024 are now seeing the second-order effects: workflows compress, attribution gets messier, and budget moves from media to model fine-tuning.[1][2]
+
+The teams winning right now are the ones who treated their first-party data like a moat — and the ones who didn't are quietly being lapped.[3]
+
+**FIELD NOTES**
+
+## What we're seeing in the wild
+
+Three customer conversations this week kept circling back to one question: how do you keep a brand voice consistent when half your content is being drafted by a model?[4]
+
+**BEYOND THE STACK**
+
+## Privacy-first analytics is finally getting interesting
+
+A handful of teams have moved off third-party tracking entirely. The reporting is messier, but the conversion lift on cookie-skeptical segments is real.[5]
+
+---
+
+## Sources
+
+1. [TechCrunch — AI Marketing Report](https://techcrunch.com)
+2. [HBR — Generative Marketing](https://hbr.org)
+3. [Forrester — First-Party Data 2026](https://forrester.com)
+4. Internal — Customer Calls W16
+5. [Wired — Analytics 2026](https://wired.com)`,
       },
       {
         id: "iss-2",
         name: "Issue #11",
         status: "published",
         date: "Apr 15, 2026",
-        sections: [
-          {
-            id: "brief",
-            label: "The Brief",
-            headline: "The agentic stack is here, and your dashboards aren't ready",
-            paragraphs: [
-              {
-                id: "b1",
-                body: "Agent frameworks moved from research to production this quarter, and the side-effect nobody wired for is observability. If you can't trace what your agent did between the prompt and the answer, you're flying blind on cost, on latency, and on quality drift.",
-                cites: [1],
-              },
-            ],
-            sources: [{ id: 1, name: "Anthropic — Engineering Notes", url: "anthropic.com" }],
-          },
-        ],
+        content: `**THE BRIEF**
+
+## The agentic stack is here, and your dashboards aren't ready
+
+Agent frameworks moved from research to production this quarter, and the side-effect nobody wired for is observability. If you can't trace what your agent did between the prompt and the answer, you're flying blind on cost, on latency, and on quality drift.[1]
+
+---
+
+## Sources
+
+1. [Anthropic — Engineering Notes](https://anthropic.com)`,
       },
       { id: "iss-3", name: "Issue #10", status: "published", date: "Apr 8, 2026" },
       { id: "iss-100", name: "Issue #9", status: "published", date: "Apr 1, 2026" },
@@ -341,7 +308,8 @@ interface WorkspaceContextType {
   updateSchedule: (newsletterId: string, schedule: Schedule) => void;
   addIssue: (newsletterId: string, issue: Issue) => void;
   archiveIssue: (newsletterId: string, issueId: string) => void;
-  updateIssueSections: (newsletterId: string, issueId: string, sections: DocSection[]) => void;
+  updateIssueContent: (newsletterId: string, issueId: string, content: string) => void;
+  restoreIssueContent: (newsletterId: string, issueId: string, entryId: string) => void;
   addSource: (
     newsletterId: string,
     input: { type: SourceType; name: string; url?: string; fileName?: string; detail?: string },
@@ -466,10 +434,58 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       issues: nl.issues.map((i) => (i.id === issueId ? { ...i, status: "archived" as const } : i)),
     }));
 
-  const updateIssueSections = (newsletterId: string, issueId: string, sections: DocSection[]) =>
+  const updateIssueContent = (newsletterId: string, issueId: string, content: string) =>
     updateNewsletter(newsletterId, (nl) => ({
       ...nl,
-      issues: nl.issues.map((i) => (i.id === issueId ? { ...i, sections } : i)),
+      issues: nl.issues.map((i) => {
+        if (i.id !== issueId) return i;
+        const previous = i.content ?? "";
+        if (previous === content) return i;
+        // Append the PREVIOUS content as a history entry, keep current as the new top.
+        const history = previous.trim() === "" && !i.contentEditedAt
+          ? (i.contentHistory ?? [])
+          : [
+              ...(i.contentHistory ?? []),
+              {
+                id: `e-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                content: previous,
+                editedBy: "You",
+              },
+            ];
+        return {
+          ...i,
+          content,
+          contentHistory: history,
+          contentEditedAt: new Date().toISOString(),
+        };
+      }),
+    }));
+
+  const restoreIssueContent = (newsletterId: string, issueId: string, entryId: string) =>
+    updateNewsletter(newsletterId, (nl) => ({
+      ...nl,
+      issues: nl.issues.map((i) => {
+        if (i.id !== issueId) return i;
+        const entry = (i.contentHistory ?? []).find((h) => h.id === entryId);
+        if (!entry) return i;
+        // Save current to history before swapping in the restored snapshot.
+        const history = [
+          ...(i.contentHistory ?? []),
+          {
+            id: `e-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            content: i.content ?? "",
+            editedBy: "You",
+          },
+        ];
+        return {
+          ...i,
+          content: entry.content,
+          contentHistory: history,
+          contentEditedAt: new Date().toISOString(),
+        };
+      }),
     }));
 
   const addSource: WorkspaceContextType["addSource"] = (newsletterId, input) =>
@@ -571,7 +587,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       updateSchedule,
       addIssue,
       archiveIssue,
-      updateIssueSections,
+      updateIssueContent,
+      restoreIssueContent,
       addSource,
       removeSource,
       acceptSuggestedSource,

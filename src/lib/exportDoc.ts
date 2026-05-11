@@ -1,4 +1,5 @@
-import type { DocSection, Issue, Newsletter } from "@/context/WorkspaceContext";
+import type { Issue, Newsletter } from "@/context/WorkspaceContext";
+import { markdownToHtml } from "./markdown";
 
 function escapeHtml(s: string): string {
   return s
@@ -15,39 +16,8 @@ function slug(s: string): string {
     .replace(/^-|-$/g, "");
 }
 
-function buildDocHtml(
-  newsletter: Newsletter,
-  issue: Issue,
-  sections: DocSection[],
-): string {
-  const sectionsHtml = sections
-    .map((s) => {
-      const paragraphs = s.paragraphs
-        .map((p) => {
-          const cites = p.cites.map((c) => `<sup>[${c}]</sup>`).join("");
-          return `<p>${escapeHtml(p.body)}${cites}</p>`;
-        })
-        .join("\n");
-
-      const sourcesList =
-        s.sources.length > 0
-          ? `<p style="font-size:9pt;color:#666;margin-top:8pt;"><em>Sources</em></p>
-<ol style="font-size:9pt;color:#666;">
-${s.sources
-  .map(
-    (src) =>
-      `<li>${escapeHtml(src.name)}${src.url ? ` &mdash; ${escapeHtml(src.url)}` : ""}</li>`,
-  )
-  .join("\n")}
-</ol>`
-          : "";
-
-      return `<div class="section-label">${escapeHtml(s.label)}</div>
-<h2>${escapeHtml(s.headline)}</h2>
-${paragraphs}
-${sourcesList}`;
-    })
-    .join("\n\n");
+function buildDocHtml(newsletter: Newsletter, issue: Issue, content: string): string {
+  const body = markdownToHtml(content);
 
   return `<!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -59,11 +29,14 @@ ${sourcesList}`;
   <style>
     body { font-family: Calibri, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #111; }
     h1 { font-size: 22pt; margin: 0 0 6pt 0; }
-    h2 { font-size: 14pt; margin: 18pt 0 6pt 0; }
+    h2 { font-size: 16pt; margin: 18pt 0 6pt 0; }
+    h3 { font-size: 13pt; margin: 14pt 0 4pt 0; }
     p { margin: 6pt 0; }
     sup { font-size: 8pt; color: #555; }
+    blockquote { margin: 8pt 0 8pt 16pt; color: #555; border-left: 2pt solid #ccc; padding-left: 8pt; }
+    hr { border: 0; border-top: 1pt solid #ccc; margin: 18pt 0; }
+    a { color: #0F1A3D; text-decoration: underline; }
     .meta { color: #666; font-size: 10pt; margin-bottom: 24pt; }
-    .section-label { text-transform: uppercase; letter-spacing: 1.5px; font-size: 9pt; color: #888; margin-top: 28pt; }
   </style>
 </head>
 <body>
@@ -71,18 +44,14 @@ ${sourcesList}`;
   <p class="meta">Sent ${escapeHtml(issue.date ?? "—")}${
     issue.status === "published" ? " &middot; Published" : ""
   }</p>
-${sectionsHtml}
+${body}
 </body>
 </html>`;
 }
 
-export function downloadIssueAsDoc(
-  newsletter: Newsletter,
-  issue: Issue,
-  sections: DocSection[],
-) {
-  if (sections.length === 0) return;
-  const html = buildDocHtml(newsletter, issue, sections);
+export function downloadIssueAsDoc(newsletter: Newsletter, issue: Issue, content: string) {
+  if (!content || !content.trim()) return;
+  const html = buildDocHtml(newsletter, issue, content);
   const blob = new Blob(["﻿", html], {
     type: "application/msword;charset=utf-8",
   });
