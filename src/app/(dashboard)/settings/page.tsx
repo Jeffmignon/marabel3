@@ -359,7 +359,7 @@ function SecuritySection() {
 }
 
 function TeamSection() {
-  const { team, updateTeamMemberRole, toggleTeamMemberAdmin } = useWorkspace();
+  const { team, updateTeamMemberRole } = useWorkspace();
 
   return (
     <Section title="Team" right={<span className="tabular text-[11px] text-ink-3">{team.length}</span>}>
@@ -370,13 +370,12 @@ function TeamSection() {
             member={m}
             isLast={i === team.length - 1}
             onRoleChange={(role) => updateTeamMemberRole(m.id, role)}
-            onAdminToggle={() => toggleTeamMemberAdmin(m.id)}
           />
         ))}
       </div>
       <p className="mt-3 text-[12px] text-ink-3">
-        Role decides whether a member is a Reviewer or the Editor on the approval pipeline.
-        Admin grants workspace-management access on top of either role.
+        Members can view and edit content. Admins additionally manage the workspace,
+        connector, and team.
       </p>
     </Section>
   );
@@ -386,12 +385,10 @@ function TeamRow({
   member,
   isLast,
   onRoleChange,
-  onAdminToggle,
 }: {
   member: TeamMember;
   isLast: boolean;
   onRoleChange: (role: TeamMember["role"]) => void;
-  onAdminToggle: () => void;
 }) {
   const initials = member.name
     .split(" ")
@@ -412,7 +409,6 @@ function TeamRow({
         <div className="truncate text-[12px] text-ink-2">{member.email}</div>
       </div>
       <RoleToggle role={member.role} onChange={onRoleChange} />
-      <AdminToggle isAdmin={member.isAdmin} onToggle={onAdminToggle} />
     </div>
   );
 }
@@ -426,7 +422,7 @@ function RoleToggle({
 }) {
   return (
     <div className="flex shrink-0 border border-line bg-paper">
-      {(["Reviewer", "Editor"] as const).map((r) => {
+      {(["Member", "Admin"] as const).map((r) => {
         const active = role === r;
         return (
           <button
@@ -441,28 +437,6 @@ function RoleToggle({
         );
       })}
     </div>
-  );
-}
-
-function AdminToggle({
-  isAdmin,
-  onToggle,
-}: {
-  isAdmin: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      title={isAdmin ? "Remove admin access" : "Grant admin access"}
-      className={`shrink-0 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider transition-colors ${
-        isAdmin
-          ? "bg-emerald-tint text-emerald hover:bg-emerald hover:text-white"
-          : "border border-line text-ink-3 hover:bg-veil hover:text-ink-2"
-      }`}
-    >
-      Admin
-    </button>
   );
 }
 

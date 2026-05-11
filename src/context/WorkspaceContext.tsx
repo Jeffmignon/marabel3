@@ -147,8 +147,7 @@ export interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: "Reviewer" | "Editor";
-  isAdmin: boolean;
+  role: "Member" | "Admin";
 }
 
 const initialUser: User = {
@@ -156,10 +155,10 @@ const initialUser: User = {
 };
 
 const initialTeam: TeamMember[] = [
-  { id: "tm-1", name: "Alex Morgan", email: "alex@acmecorp.com", role: "Reviewer", isAdmin: false },
-  { id: "tm-2", name: "Chris Park", email: "chris@acmecorp.com", role: "Reviewer", isAdmin: false },
-  { id: "tm-3", name: "Sam Lee", email: "sam@acmecorp.com", role: "Editor", isAdmin: true },
-  { id: "tm-4", name: "Taylor Kim", email: "taylor@acmecorp.com", role: "Reviewer", isAdmin: false },
+  { id: "tm-1", name: "Alex Morgan", email: "alex@acmecorp.com", role: "Member" },
+  { id: "tm-2", name: "Chris Park", email: "chris@acmecorp.com", role: "Member" },
+  { id: "tm-3", name: "Sam Lee", email: "sam@acmecorp.com", role: "Admin" },
+  { id: "tm-4", name: "Taylor Kim", email: "taylor@acmecorp.com", role: "Member" },
 ];
 
 const initialBrand: Brand = {
@@ -313,7 +312,6 @@ interface WorkspaceContextType {
   updateUserEmail: (email: string) => void;
   updatePassword: (current: string, next: string) => boolean;
   updateTeamMemberRole: (id: string, role: TeamMember["role"]) => void;
-  toggleTeamMemberAdmin: (id: string) => void;
   updateBrand: (patch: Partial<Brand>) => void;
   updateConnector: (patch: Partial<Connector>) => void;
   addNewsletter: (name: string) => Newsletter;
@@ -387,9 +385,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const updateTeamMemberRole = (id: string, role: TeamMember["role"]) =>
     setTeam((prev) => prev.map((m) => (m.id === id ? { ...m, role } : m)));
-
-  const toggleTeamMemberAdmin = (id: string) =>
-    setTeam((prev) => prev.map((m) => (m.id === id ? { ...m, isAdmin: !m.isAdmin } : m)));
 
   const updateBrand = (patch: Partial<Brand>) => setBrand((prev) => ({ ...prev, ...patch }));
 
@@ -619,7 +614,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       updateUserEmail,
       updatePassword,
       updateTeamMemberRole,
-      toggleTeamMemberAdmin,
       updateBrand,
       updateConnector,
       addNewsletter,
