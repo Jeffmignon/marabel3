@@ -1,7 +1,7 @@
 "use client";
 
-import { use, useState } from "react";
-import { notFound, useSearchParams } from "next/navigation";
+import { use, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AppShell } from "@/components/chrome/AppShell";
 import { SourcesPane } from "@/components/workspace/SourcesPane";
@@ -30,8 +30,22 @@ export default function WorkspacePage({ params }: PageProps) {
   const [sourcesOpen, setSourcesOpen] = useState(true);
   const [studioOpen, setStudioOpen] = useState(true);
 
+  const router = useRouter();
   const newsletter = newsletters.find((nl) => nl.id === id);
-  if (!newsletter) return notFound();
+
+  // Graceful fallback: stale links to deleted newsletters get bounced back
+  // to the home aggregation rather than a hard 404.
+  useEffect(() => {
+    if (!newsletter) router.replace("/");
+  }, [newsletter, router]);
+
+  if (!newsletter) {
+    return (
+      <div className="flex h-full items-center justify-center text-[13px] text-ink-3">
+        Returning to your newsletters…
+      </div>
+    );
+  }
 
   const inProgress =
     newsletter.issues.find((i) => i.status === "in_progress") ?? newsletter.issues[0];
