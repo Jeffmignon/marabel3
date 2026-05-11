@@ -8,7 +8,6 @@ import { SourcesPane } from "@/components/workspace/SourcesPane";
 import { IssueDocument } from "@/components/workspace/IssueDocument";
 import { StudioPane } from "@/components/workspace/StudioPane";
 import { PaneRail } from "@/components/workspace/PaneRail";
-import { ChevronLeft } from "@/components/workspace/Icons";
 import { EditableText } from "@/components/workspace/EditableText";
 import { useWorkspace } from "@/context/WorkspaceContext";
 
@@ -44,14 +43,6 @@ export default function WorkspacePage({ params }: PageProps) {
     <AppShell
       left={
         <nav className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 border border-line bg-paper px-2.5 py-1 text-[12px] text-ink-2 transition-colors hover:bg-veil hover:text-ink"
-          >
-            <ChevronLeft width={12} height={12} />
-            All newsletters
-          </Link>
-          <span className="text-ink-4">·</span>
           <EditableText
             value={newsletter.name}
             onChange={(name) => renameNewsletter(newsletter.id, name)}
