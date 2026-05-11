@@ -29,9 +29,8 @@
   --color-rose: #E11D48;
   --color-rose-tint: #FFE4E6;
 
-  /* Source type dots */
+  /* Source dot accent */
   --color-dot-url: #0F1A3D;
-  --color-dot-doc: #7C3AED;
 
   /* Type */
   --font-sans: "Geist", "Helvetica Neue", Helvetica, Arial, sans-serif;

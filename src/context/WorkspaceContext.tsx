@@ -81,7 +81,7 @@ export interface SourceActivity {
   topic: string;
 }
 
-export type SourceType = "url" | "doc";
+export type SourceType = "url";
 
 export interface Source {
   id: string;
@@ -89,7 +89,6 @@ export interface Source {
   name: string;
   detail: string;
   url?: string;
-  fileName?: string;
   itemCount: number;
   syncedAgo: string;
 }
@@ -212,7 +211,6 @@ const initialNewsletters: Newsletter[] = [
       { id: "src-nl1-1", type: "url", name: "TechCrunch", detail: "AI & Marketing", url: "techcrunch.com", itemCount: 3, syncedAgo: "12m ago" },
       { id: "src-nl1-2", type: "url", name: "Harvard Business Review", detail: "Leadership", url: "hbr.org", itemCount: 1, syncedAgo: "1h ago" },
       { id: "src-nl1-3", type: "url", name: "Forrester Blog", detail: "Data & Analytics", url: "forrester.com/blogs", itemCount: 2, syncedAgo: "2h ago" },
-      { id: "src-nl1-4", type: "doc", name: "Brand voice guide.pdf", detail: "Uploaded Apr 02", fileName: "brand-voice-guide.pdf", itemCount: 1, syncedAgo: "—" },
     ],
     suggestedSources: [
       { id: "sug-nl1-1", type: "url", name: "Forrester Research", detail: "forrester.com", reason: "Matches your B2B audience" },
@@ -330,7 +328,7 @@ interface WorkspaceContextType {
   deleteComment: (newsletterId: string, issueId: string, commentId: string) => void;
   addSource: (
     newsletterId: string,
-    input: { type: SourceType; name: string; url?: string; fileName?: string; detail?: string },
+    input: { name: string; url: string; detail?: string },
   ) => void;
   removeSource: (newsletterId: string, sourceId: string) => void;
   acceptSuggestedSource: (newsletterId: string, suggestedId: string) => void;
@@ -564,16 +562,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const id = `src-${Date.now()}`;
       const detail =
         input.detail ??
-        (input.type === "url"
-          ? input.url?.replace(/^https?:\/\//, "").replace(/\/$/, "") ?? ""
-          : "Just uploaded");
+        input.url.replace(/^https?:\/\//, "").replace(/\/$/, "");
       const next: Source = {
         id,
-        type: input.type,
+        type: "url",
         name: input.name,
         detail,
         url: input.url,
-        fileName: input.fileName,
         itemCount: 0,
         syncedAgo: "just now",
       };
@@ -592,10 +587,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (!sug) return nl;
       const promoted: Source = {
         id: `src-${Date.now()}`,
-        type: sug.type,
+        type: "url",
         name: sug.name,
         detail: sug.detail,
-        url: sug.type === "url" ? sug.detail : undefined,
+        url: sug.detail,
         itemCount: 0,
         syncedAgo: "just now",
       };
