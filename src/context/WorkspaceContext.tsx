@@ -28,15 +28,6 @@ export interface EditEntry {
   editedBy: string;  // "You" / "Marabel" — display label only
 }
 
-export interface IssueComment {
-  id: string;
-  anchor: string;    // the highlighted text snippet (for display context)
-  body: string;
-  author: string;    // "You" — display label only
-  timestamp: string; // ISO
-  resolved: boolean;
-}
-
 export interface Issue {
   id: string;
   name: string;
@@ -48,8 +39,6 @@ export interface Issue {
   contentHistory?: EditEntry[];
   /** ISO timestamp of the last edit (by a human); undefined if never edited. */
   contentEditedAt?: string;
-  /** Comments left on highlighted spans. */
-  comments?: IssueComment[];
   // 0 = drafting (not yet submitted)
   // 1..reviewers.length = at that reviewer's step
   // reviewers.length + 1 = past final approver, ready to push
@@ -319,18 +308,16 @@ interface WorkspaceContextType {
   archiveIssue: (newsletterId: string, issueId: string) => void;
   updateIssueContent: (newsletterId: string, issueId: string, content: string) => void;
   restoreIssueContent: (newsletterId: string, issueId: string, entryId: string) => void;
-  addComment: (
-    newsletterId: string,
-    issueId: string,
-    comment: Omit<IssueComment, "id" | "timestamp" | "resolved">,
-  ) => void;
-  resolveComment: (newsletterId: string, issueId: string, commentId: string) => void;
-  deleteComment: (newsletterId: string, issueId: string, commentId: string) => void;
   addSource: (
     newsletterId: string,
     input: { name: string; url: string; detail?: string },
   ) => void;
   removeSource: (newsletterId: string, sourceId: string) => void;
+  updateSource: (
+    newsletterId: string,
+    sourceId: string,
+    patch: { name?: string; url?: string },
+  ) => void;
   acceptSuggestedSource: (newsletterId: string, suggestedId: string) => void;
   dismissSuggestedSource: (newsletterId: string, suggestedId: string) => void;
   addBrandSkill: (skill: Skill) => void;
@@ -478,59 +465,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }),
     }));
 
-  const addComment: WorkspaceContextType["addComment"] = (
-    newsletterId,
-    issueId,
-    comment,
-  ) =>
-    updateNewsletter(newsletterId, (nl) => ({
-      ...nl,
-      issues: nl.issues.map((i) =>
-        i.id !== issueId
-          ? i
-          : {
-              ...i,
-              comments: [
-                ...(i.comments ?? []),
-                {
-                  id: `c-${Date.now()}`,
-                  timestamp: new Date().toISOString(),
-                  resolved: false,
-                  ...comment,
-                },
-              ],
-            },
-      ),
-    }));
-
-  const resolveComment = (newsletterId: string, issueId: string, commentId: string) =>
-    updateNewsletter(newsletterId, (nl) => ({
-      ...nl,
-      issues: nl.issues.map((i) =>
-        i.id !== issueId
-          ? i
-          : {
-              ...i,
-              comments: (i.comments ?? []).map((c) =>
-                c.id === commentId ? { ...c, resolved: !c.resolved } : c,
-              ),
-            },
-      ),
-    }));
-
-  const deleteComment = (newsletterId: string, issueId: string, commentId: string) =>
-    updateNewsletter(newsletterId, (nl) => ({
-      ...nl,
-      issues: nl.issues.map((i) =>
-        i.id !== issueId
-          ? i
-          : {
-              ...i,
-              comments: (i.comments ?? []).filter((c) => c.id !== commentId),
-            },
-      ),
-    }));
-
   const restoreIssueContent = (newsletterId: string, issueId: string, entryId: string) =>
     updateNewsletter(newsletterId, (nl) => ({
       ...nl,
@@ -579,6 +513,27 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     updateNewsletter(newsletterId, (nl) => ({
       ...nl,
       sources: nl.sources.filter((s) => s.id !== sourceId),
+    }));
+
+  const updateSource: WorkspaceContextType["updateSource"] = (
+    newsletterId,
+    sourceId,
+    patch,
+  ) =>
+    updateNewsletter(newsletterId, (nl) => ({
+      ...nl,
+      sources: nl.sources.map((s) => {
+        if (s.id !== sourceId) return s;
+        const nextUrl = patch.url ?? s.url ?? "";
+        const nextName = patch.name ?? s.name;
+        const nextDetail = nextUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+        return {
+          ...s,
+          name: nextName,
+          url: nextUrl,
+          detail: nextDetail || s.detail,
+        };
+      }),
     }));
 
   const acceptSuggestedSource = (newsletterId: string, suggestedId: string) =>
@@ -655,11 +610,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       archiveIssue,
       updateIssueContent,
       restoreIssueContent,
-      addComment,
-      resolveComment,
-      deleteComment,
       addSource,
       removeSource,
+      updateSource,
       acceptSuggestedSource,
       dismissSuggestedSource,
       addBrandSkill,

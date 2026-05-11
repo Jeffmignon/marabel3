@@ -1,27 +1,29 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 interface RewritePopoverProps {
+  /** Where the selection was when the popover opened (viewport-relative). */
   rect: DOMRect;
+  /** A snapshot of the highlighted text — frozen at open time so it survives
+   *  the user clicking into the popover (which collapses the live selection). */
   selection: string;
-  onAccept: (next: string) => void;
+  onApply: (rewritten: string) => void;
   onClose: () => void;
 }
-
-type Phase = "instruct" | "thinking" | "result";
 
 export function RewritePopover({
   rect,
   selection,
-  onAccept,
+  onApply,
   onClose,
 }: RewritePopoverProps) {
   const [instruction, setInstruction] = useState("");
-  const [phase, setPhase] = useState<Phase>("instruct");
-  const [candidate, setCandidate] = useState("");
-  const ref = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(false);
 
+  // Esc closes — but no document mousedown listener (the prior version
+  // closed the popover the moment the user clicked into the input).
+  // Clicks outside are handled by the transparent backdrop below.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
@@ -29,22 +31,15 @@ export function RewritePopover({
         onClose();
       }
     }
-    function onMouse(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    }
     document.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onMouse);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("mousedown", onMouse);
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  function generate() {
-    setPhase("thinking");
+  function submit() {
+    setLoading(true);
     setTimeout(() => {
-      setCandidate(fakeRewrite(selection, instruction));
-      setPhase("result");
+      const rewritten = fakeRewrite(selection, instruction);
+      onApply(rewritten);
     }, 600);
   }
 
@@ -52,14 +47,21 @@ export function RewritePopover({
   const left = Math.min(window.innerWidth - 420, Math.max(8, rect.left));
 
   return (
-    <div
-      ref={ref}
-      style={{ position: "fixed", top, left, zIndex: 60, width: 400 }}
-      className="border border-line bg-paper shadow-[0_4px_16px_rgba(0,0,0,0.10)]"
-    >
+    <>
+      {/* Transparent backdrop — clicking it (anywhere outside the popover)
+          closes. Clicks inside the popover do not propagate here. */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 z-50"
+        aria-hidden="true"
+      />
+      <div
+        style={{ position: "fixed", top, left, zIndex: 60, width: 400 }}
+        className="border border-line bg-paper shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
+      >
       <div className="flex items-center justify-between border-b border-line px-3 py-2">
         <span className="text-[10px] uppercase tracking-[0.14em] text-ink-3">
-          {phase === "result" ? "Marabel rewrote it" : "Ask Marabel to rewrite"}
+          Tell Marabel what to change
         </span>
         <button
           onClick={onClose}
@@ -70,11 +72,21 @@ export function RewritePopover({
         </button>
       </div>
 
-      {phase === "instruct" && (
+      <div className="border-b border-line bg-amber-tint/40 px-3 py-2 text-[12px] italic text-ink-2">
+        “{truncate(selection, 160)}”
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center gap-2 p-6 text-[12px] text-ink-3">
+          <Dot delay={0} />
+          <Dot delay={150} />
+          <Dot delay={300} />
+        </div>
+      ) : (
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            generate();
+            submit();
           }}
           className="p-3"
         >
@@ -82,36 +94,21 @@ export function RewritePopover({
             autoFocus
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
-            placeholder="How should it be rewritten?"
+            placeholder="What should change? (e.g. shorter, punchier, more formal)"
             className="block w-full border border-line bg-paper px-2 py-1.5 text-[13px] text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
           />
-        </form>
-      )}
-
-      {phase === "thinking" && (
-        <div className="flex items-center justify-center gap-2 p-6 text-[12px] text-ink-3">
-          <Dot delay={0} />
-          <Dot delay={150} />
-          <Dot delay={300} />
-        </div>
-      )}
-
-      {phase === "result" && (
-        <div className="p-3">
-          <div className="border border-accent bg-accent-tint/40 p-3 text-[13px] leading-relaxed text-ink">
-            {candidate}
-          </div>
           <div className="mt-3 flex justify-end">
             <button
-              onClick={() => onAccept(candidate)}
+              type="submit"
               className="bg-accent px-3 py-1.5 text-[12px] font-medium text-white"
             >
-              Apply
+              ✨ AI rewrite
             </button>
           </div>
-        </div>
+        </form>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -124,10 +121,18 @@ function Dot({ delay }: { delay: number }) {
   );
 }
 
-function fakeRewrite(text: string, instruction: string): string {
-  const t = instruction.toLowerCase();
+function truncate(s: string, n: number): string {
+  if (s.length <= n) return s;
+  return s.slice(0, n - 1).trimEnd() + "…";
+}
 
-  if (/shorter|tighter|trim/.test(t)) {
+function fakeRewrite(text: string, instruction: string): string {
+  const t = instruction.toLowerCase().trim();
+
+  if (!t) {
+    return `${text.trim()} — that's the part most teams underestimate.`;
+  }
+  if (/shorter|tighter|trim|concise/.test(t)) {
     const first = text.split(/(?<=[.!?])\s+/)[0] ?? text;
     return first.trim();
   }
@@ -153,12 +158,12 @@ function fakeRewrite(text: string, instruction: string): string {
       .replace(/\baren't\b/gi, "are not")
       .replace(/\bwe're\b/gi, "we are");
   }
-  if (/casual|conversational|relax/.test(t)) {
+  if (/casual|conversational|relax|loosen/.test(t)) {
     return text
       .replace(/\bdo not\b/gi, "don't")
       .replace(/\bwill not\b/gi, "won't")
       .replace(/\bcannot\b/gi, "can't");
   }
 
-  return `${text.trim()} — that's the part most teams underestimate.`;
+  return `${text.trim()} — rewritten for "${t}".`;
 }
