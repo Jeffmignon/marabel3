@@ -74,9 +74,11 @@ export default function Home() {
             What's shipping this week?
           </h1>
           <p className="mt-3 text-[14px] text-ink-2">
-            {counts.total} {counts.total === 1 ? "issue" : "issues"} across{" "}
-            {newsletters.length} newsletters &middot; {counts.inProg} in progress
-            &middot; {counts.pub} published
+            {counts.total} {counts.total === 1 ? "issue" : "issues"}
+            {newsletters.length === 1
+              ? ` for ${newsletters[0].name}`
+              : ` across ${newsletters.length} newsletters`}
+            {" "}&middot; {counts.inProg} in progress &middot; {counts.pub} published
           </p>
         </header>
 

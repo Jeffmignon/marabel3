@@ -4,14 +4,20 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/chrome/AppShell";
 import { ChevronLeft, Trash } from "@/components/workspace/Icons";
-import { useWorkspace, type Source } from "@/context/WorkspaceContext";
+import { useWorkspace, type Issue, type Newsletter, type Source } from "@/context/WorkspaceContext";
 
-type ViewMode = "all" | "by_newsletter";
+type ViewMode = "all" | "by_issue";
 
 interface SourceWithOwner {
   newsletterId: string;
   newsletterName: string;
   source: Source;
+}
+
+interface CitedSource {
+  number: number;
+  name: string;
+  url?: string;
 }
 
 export default function SourcesPage() {
@@ -25,6 +31,27 @@ export default function SourcesPage() {
         out.push({ newsletterId: nl.id, newsletterName: nl.name, source: s });
       }
     }
+    return out;
+  }, [newsletters]);
+
+  // Flatten all (newsletter, issue) pairs, sorted with in-progress first.
+  const issuesByCitation = useMemo(() => {
+    const out: { newsletter: Newsletter; issue: Issue; cited: CitedSource[] }[] = [];
+    for (const nl of newsletters) {
+      for (const issue of nl.issues) {
+        if (issue.status === "archived") continue;
+        const cited = extractCitedSources(issue.content ?? "");
+        out.push({ newsletter: nl, issue, cited });
+      }
+    }
+    out.sort((a, b) => {
+      const sa = a.issue.status === "in_progress" ? 1 : 0;
+      const sb = b.issue.status === "in_progress" ? 1 : 0;
+      if (sa !== sb) return sb - sa;
+      const da = a.issue.date ? Date.parse(a.issue.date) : 0;
+      const db = b.issue.date ? Date.parse(b.issue.date) : 0;
+      return (isNaN(db) ? 0 : db) - (isNaN(da) ? 0 : da);
+    });
     return out;
   }, [newsletters]);
 
@@ -49,10 +76,10 @@ export default function SourcesPage() {
             onClick={() => setView("all")}
           />
           <ViewChip
-            label="By newsletter"
-            count={newsletters.length}
-            active={view === "by_newsletter"}
-            onClick={() => setView("by_newsletter")}
+            label="By issue"
+            count={issuesByCitation.length}
+            active={view === "by_issue"}
+            onClick={() => setView("by_issue")}
           />
         </div>
 
@@ -65,7 +92,9 @@ export default function SourcesPage() {
                 <SourceRow
                   key={`${newsletterId}-${source.id}`}
                   source={source}
-                  newsletterName={newsletterName}
+                  newsletterName={
+                    newsletters.length > 1 ? newsletterName : undefined
+                  }
                   onUpdate={(patch) => updateSource(newsletterId, source.id, patch)}
                   onRemove={() => removeSource(newsletterId, source.id)}
                 />
@@ -74,16 +103,19 @@ export default function SourcesPage() {
           )
         ) : (
           <div className="space-y-8">
-            {newsletters.map((nl) => (
-              <NewsletterGroup
-                key={nl.id}
-                newsletterId={nl.id}
-                newsletterName={nl.name}
-                sources={nl.sources}
-                onUpdate={(sourceId, patch) => updateSource(nl.id, sourceId, patch)}
-                onRemove={(sourceId) => removeSource(nl.id, sourceId)}
+            {issuesByCitation.map(({ newsletter, issue, cited }) => (
+              <IssueGroup
+                key={`${newsletter.id}-${issue.id}`}
+                newsletter={newsletter}
+                issue={issue}
+                cited={cited}
               />
             ))}
+            {issuesByCitation.length === 0 && (
+              <div className="border border-dashed border-line-2 bg-paper p-8 text-center text-[13px] text-ink-2">
+                No issues yet.
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -123,42 +155,75 @@ function ViewChip({
   );
 }
 
-function NewsletterGroup({
-  newsletterId,
-  newsletterName,
-  sources,
-  onUpdate,
-  onRemove,
+function IssueGroup({
+  newsletter,
+  issue,
+  cited,
 }: {
-  newsletterId: string;
-  newsletterName: string;
-  sources: Source[];
-  onUpdate: (sourceId: string, patch: { name?: string; url?: string }) => void;
-  onRemove: (sourceId: string) => void;
+  newsletter: Newsletter;
+  issue: Issue;
+  cited: CitedSource[];
 }) {
+  const isInProgress = issue.status === "in_progress";
   return (
     <section>
-      <div className="mb-2 flex items-baseline justify-between">
-        <h2 className="text-[11px] uppercase tracking-[0.14em] text-ink-3">
-          {newsletterName}
-        </h2>
-        <span className="tabular text-[11px] text-ink-3">{sources.length}</span>
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <div className="flex items-baseline gap-2">
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${
+              isInProgress ? "bg-amber" : "bg-emerald"
+            }`}
+          />
+          <h2 className="text-[14px] font-medium text-ink">{issue.name}</h2>
+          <span className="text-[11px] text-ink-3">
+            {isInProgress ? `sends ${issue.date}` : `published ${issue.date}`}
+          </span>
+        </div>
+        <Link
+          href={`/workspace/${newsletter.id}?issue=${issue.id}`}
+          className="text-[12px] text-accent hover:underline"
+        >
+          Open →
+        </Link>
       </div>
-      {sources.length === 0 ? (
-        <div className="border border-dashed border-line-2 bg-paper p-4 text-[12px] text-ink-3">
-          No sources for {newsletterName} yet.
+      {cited.length === 0 ? (
+        <div className="border border-dashed border-line-2 bg-paper p-3 text-[12px] text-ink-3">
+          No sources cited in this issue.
         </div>
       ) : (
-        <ul className="border-y border-line">
-          {sources.map((s) => (
-            <SourceRow
-              key={`${newsletterId}-${s.id}`}
-              source={s}
-              onUpdate={(patch) => onUpdate(s.id, patch)}
-              onRemove={() => onRemove(s.id)}
-            />
+        <ol className="border-y border-line">
+          {cited.map((c) => (
+            <li
+              key={c.number}
+              className="flex items-baseline gap-3 border-b border-line bg-paper px-4 py-2.5 last:border-0"
+            >
+              <span className="tabular shrink-0 text-[11px] text-ink-3 w-5">
+                {c.number}.
+              </span>
+              <div className="min-w-0 flex-1">
+                {c.url ? (
+                  <a
+                    href={c.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block truncate text-[13px] font-medium text-ink hover:text-accent"
+                  >
+                    {c.name}
+                  </a>
+                ) : (
+                  <div className="truncate text-[13px] font-medium text-ink">
+                    {c.name}
+                  </div>
+                )}
+                {c.url && (
+                  <div className="mt-0.5 truncate text-[11px] text-ink-3">
+                    {c.url.replace(/^https?:\/\//, "")}
+                  </div>
+                )}
+              </div>
+            </li>
           ))}
-        </ul>
+        </ol>
       )}
     </section>
   );
@@ -171,7 +236,7 @@ function SourceRow({
   onRemove,
 }: {
   source: Source;
-  /** Only shown in the All view; omitted in the By-newsletter view. */
+  /** Only shown when there's more than one newsletter. */
   newsletterName?: string;
   onUpdate: (patch: { name?: string; url?: string }) => void;
   onRemove: () => void;
@@ -284,7 +349,31 @@ function SourceRow({
 function EmptyState() {
   return (
     <div className="border border-dashed border-line-2 bg-paper p-8 text-center">
-      <div className="text-[14px] text-ink-2">No sources yet across any newsletter.</div>
+      <div className="text-[14px] text-ink-2">No sources yet.</div>
     </div>
   );
+}
+
+/**
+ * Pull the cited sources out of the issue's markdown — looks for the
+ * "## Sources" block and parses numbered list items, each optionally
+ * a [name](url) link.
+ */
+function extractCitedSources(content: string): CitedSource[] {
+  if (!content) return [];
+  const m = content.match(/##\s+Sources\s*\n([\s\S]+?)(?=\n##\s+|\n*$)/);
+  if (!m) return [];
+  const block = m[1];
+  const out: CitedSource[] = [];
+  const re = /^\s*(\d+)\.\s+(?:\[([^\]]+)\]\(([^)]+)\)|(.+?))\s*$/gm;
+  let line;
+  while ((line = re.exec(block))) {
+    const [, num, linkText, linkUrl, plain] = line;
+    out.push({
+      number: parseInt(num, 10),
+      name: (linkText ?? plain ?? "").trim(),
+      url: linkUrl,
+    });
+  }
+  return out;
 }
