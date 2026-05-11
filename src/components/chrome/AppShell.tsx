@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { type ReactNode } from "react";
+import { ConnectorAlert } from "./ConnectorAlert";
 
 interface AppShellProps {
   left?: ReactNode;
@@ -35,6 +36,7 @@ export function AppShell({ left, right, children }: AppShellProps) {
           </div>
         </div>
       </header>
+      <ConnectorAlert />
       <div className="flex-1 overflow-hidden">{children}</div>
     </div>
   );

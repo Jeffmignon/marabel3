@@ -116,6 +116,19 @@ export interface Newsletter {
   schedule: Schedule;
 }
 
+export type ConnectorType = "hubspot";
+
+export type ConnectorStatus = "connected" | "disconnected" | "error";
+
+export interface Connector {
+  type: ConnectorType;
+  status: ConnectorStatus;
+  apiKey?: string;          // masked / placeholder in this prototype
+  connectedAt?: string;     // ISO when last successfully connected
+  lastError?: string;       // present when status === "error"
+  lastErrorAt?: string;     // ISO of the failure
+}
+
 export interface Brand {
   id: string;
   name: string;
@@ -123,6 +136,7 @@ export interface Brand {
   voice?: string;
   values?: string;
   skills: Skill[];
+  connector: Connector;
 }
 
 export interface User {
@@ -154,6 +168,12 @@ const initialBrand: Brand = {
   audience: "B2B marketing leaders at Series-B+ SaaS companies. Mostly VPs of marketing and growth — quantitative, time-poor, allergic to fluff.",
   voice: "Confident and data-led. Conversational without being chummy. Never preachy. Short sentences. Strong verbs. No buzzwords we wouldn't say out loud.",
   values: "Insight over reach. Signal over noise. We'd rather be useful to 1,000 people than viral to a million.",
+  connector: {
+    type: "hubspot",
+    status: "connected",
+    apiKey: "hs_demo_••••••••",
+    connectedAt: "2026-05-08T10:00:00Z",
+  },
   skills: [
     {
       id: "bs1",
@@ -535,6 +555,7 @@ interface WorkspaceContextType {
   updateTeamMemberRole: (id: string, role: TeamMember["role"]) => void;
   toggleTeamMemberAdmin: (id: string) => void;
   updateBrand: (patch: Partial<Brand>) => void;
+  updateConnector: (patch: Partial<Connector>) => void;
   addNewsletter: (name: string) => Newsletter;
   deleteNewsletter: (newsletterId: string) => void;
   renameNewsletter: (newsletterId: string, name: string) => void;
@@ -611,6 +632,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setTeam((prev) => prev.map((m) => (m.id === id ? { ...m, isAdmin: !m.isAdmin } : m)));
 
   const updateBrand = (patch: Partial<Brand>) => setBrand((prev) => ({ ...prev, ...patch }));
+
+  const updateConnector = (patch: Partial<Connector>) =>
+    setBrand((prev) => ({ ...prev, connector: { ...prev.connector, ...patch } }));
 
   const addNewsletter = (name: string): Newsletter => {
     const nl = makeNewNewsletter(`nl-${Date.now()}`, name);
@@ -837,6 +861,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       updateTeamMemberRole,
       toggleTeamMemberAdmin,
       updateBrand,
+      updateConnector,
       addNewsletter,
       deleteNewsletter,
       renameNewsletter,

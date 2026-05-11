@@ -16,11 +16,195 @@ export default function SettingsPage() {
         </header>
 
         <AccountSection />
+        <ConnectorSection />
         <SecuritySection />
         <TeamSection />
       </div>
     </AppShell>
   );
+}
+
+function ConnectorSection() {
+  const { brand, updateConnector } = useWorkspace();
+  const c = brand.connector;
+  const [apiKey, setApiKey] = useState("");
+
+  const dotClass =
+    c.status === "connected"
+      ? "bg-emerald"
+      : c.status === "error"
+      ? "bg-rose"
+      : "bg-ink-3";
+  const statusLabel =
+    c.status === "connected" ? "Connected" : c.status === "error" ? "Error" : "Not connected";
+
+  function connect(e: React.FormEvent) {
+    e.preventDefault();
+    if (!apiKey.trim()) return;
+    updateConnector({
+      status: "connected",
+      apiKey: maskKey(apiKey.trim()),
+      connectedAt: new Date().toISOString(),
+      lastError: undefined,
+      lastErrorAt: undefined,
+    });
+    setApiKey("");
+  }
+
+  function disconnect() {
+    updateConnector({
+      status: "disconnected",
+      apiKey: undefined,
+      lastError: undefined,
+      lastErrorAt: undefined,
+    });
+  }
+
+  function simulateError() {
+    updateConnector({
+      status: "error",
+      lastError: "HubSpot returned 401 Unauthorized on last sync.",
+      lastErrorAt: new Date().toISOString(),
+    });
+  }
+
+  function reconnect() {
+    updateConnector({
+      status: "connected",
+      connectedAt: new Date().toISOString(),
+      lastError: undefined,
+      lastErrorAt: undefined,
+    });
+  }
+
+  return (
+    <Section
+      title="Connector"
+      right={
+        <span className="inline-flex items-center gap-1.5 text-[11px]">
+          <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} />
+          <span className="uppercase tracking-wider text-ink-2">{statusLabel}</span>
+        </span>
+      }
+    >
+      <div className="border border-line bg-paper p-4">
+        <div className="flex items-baseline justify-between">
+          <div>
+            <div className="text-[14px] font-medium text-ink">HubSpot</div>
+            <div className="mt-0.5 text-[12px] text-ink-2">
+              Where Marabel publishes approved newsletters.
+            </div>
+          </div>
+        </div>
+
+        {c.status === "connected" && (
+          <>
+            <div className="mt-4 space-y-1 border-t border-line pt-4 text-[12px]">
+              <div className="flex justify-between text-ink-2">
+                <span>API key</span>
+                <span className="font-mono text-ink">{c.apiKey ?? "—"}</span>
+              </div>
+              <div className="flex justify-between text-ink-2">
+                <span>Connected</span>
+                <span className="text-ink">
+                  {c.connectedAt ? formatDate(c.connectedAt) : "—"}
+                </span>
+              </div>
+            </div>
+            <div className="mt-4 flex justify-between gap-2">
+              <button
+                onClick={simulateError}
+                className="text-[11px] text-ink-3 hover:text-rose"
+                title="Triggers the error banner — for testing the alert UI"
+              >
+                Simulate error
+              </button>
+              <button
+                onClick={disconnect}
+                className="border border-line bg-paper px-3 py-1.5 text-[12px] text-ink-2 hover:bg-veil hover:text-ink"
+              >
+                Disconnect
+              </button>
+            </div>
+          </>
+        )}
+
+        {c.status === "error" && (
+          <>
+            <div className="mt-4 border-t border-line pt-4">
+              <div className="border border-rose/40 bg-rose-tint p-3 text-[12px] text-rose">
+                <div className="font-medium">Sync failed</div>
+                <div className="mt-0.5">
+                  {c.lastError ?? "Marabel couldn't reach HubSpot."}
+                  {c.lastErrorAt && (
+                    <span className="ml-1 text-rose/80">
+                      ({formatDate(c.lastErrorAt)})
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={disconnect}
+                className="border border-line bg-paper px-3 py-1.5 text-[12px] text-ink-2 hover:bg-veil hover:text-ink"
+              >
+                Disconnect
+              </button>
+              <button
+                onClick={reconnect}
+                className="bg-accent px-3 py-1.5 text-[12px] font-medium text-white"
+              >
+                Reconnect
+              </button>
+            </div>
+          </>
+        )}
+
+        {c.status === "disconnected" && (
+          <form onSubmit={connect} className="mt-4 space-y-3 border-t border-line pt-4">
+            <label className="block">
+              <span className="text-[10px] uppercase tracking-[0.12em] text-ink-3">
+                HubSpot API key
+              </span>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="pat-na1-xxxx-xxxx-xxxx"
+                autoComplete="off"
+                className="mt-1 block w-full border border-line bg-paper px-2 py-1.5 text-[14px] text-ink focus:border-accent focus:outline-none"
+              />
+            </label>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={!apiKey.trim()}
+                className="bg-accent px-3 py-1.5 text-[12px] font-medium text-white transition-opacity disabled:opacity-30"
+              >
+                Connect
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+function maskKey(k: string): string {
+  if (k.length <= 8) return "••••••••";
+  return k.slice(0, 4) + "••••••••" + k.slice(-4);
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function AccountSection() {
