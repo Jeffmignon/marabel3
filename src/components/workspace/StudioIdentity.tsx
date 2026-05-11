@@ -3,22 +3,26 @@
 import { useEffect, useState } from "react";
 import { useWorkspace } from "@/context/WorkspaceContext";
 
-type Field = "audience" | "voice" | "values";
+type Field = "persona" | "domain" | "brandVoice" | "angleTemplate";
+
+const FIELDS: Field[] = ["persona", "domain", "brandVoice", "angleTemplate"];
 
 const FIELD_LABEL: Record<Field, string> = {
-  audience: "Audience",
-  voice: "Voice",
-  values: "Values",
+  persona: "Persona",
+  domain: "Domain",
+  brandVoice: "Brand voice",
+  angleTemplate: "Angle template",
 };
 
 const FIELD_HINT: Record<Field, string> = {
-  audience: "Who reads this? Roles, seniority, what they care about.",
-  voice: "How should it sound? Tone, register, words to avoid.",
-  values: "What does the brand stand for? Editorial principles.",
+  persona: "Who reads this? Roles, seniority, what they care about.",
+  domain: "What topic, industry, or beat does this newsletter cover?",
+  brandVoice: "How should it sound? Tone, register, words to avoid.",
+  angleTemplate: "What's the recurring editorial angle? How each issue is shaped.",
 };
 
 const FIELD_PLACEHOLDER: Record<Field, string> = {
-  audience: `# Audience
+  persona: `# Persona
 
 Describe the people this newsletter is written for.
 
@@ -30,7 +34,17 @@ Describe the people this newsletter is written for.
 
 ## What we never assume about them
 - ...`,
-  voice: `# Voice
+  domain: `# Domain
+
+The topic / industry / beat this newsletter covers.
+
+## Scope
+- What's in
+- What's out
+
+## Adjacent areas we touch occasionally
+- ...`,
+  brandVoice: `# Brand voice
 
 Describe how this newsletter sounds.
 
@@ -42,14 +56,17 @@ Describe how this newsletter sounds.
 
 ## Words to avoid
 - ...`,
-  values: `# Values
+  angleTemplate: `# Angle template
 
-What this newsletter stands for.
+The recurring editorial shape of every issue.
 
-## Editorial principles
+## Opening
 - ...
 
-## What we'd rather lose readers than do
+## Middle
+- ...
+
+## Closing
 - ...`,
 };
 
@@ -60,7 +77,7 @@ export function StudioIdentity() {
   return (
     <>
       <div className="space-y-2 px-4 pb-4">
-        {(["audience", "voice", "values"] as const).map((field) => (
+        {FIELDS.map((field) => (
           <IdentityCard
             key={field}
             field={field}

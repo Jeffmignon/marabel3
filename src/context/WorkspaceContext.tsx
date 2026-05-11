@@ -132,9 +132,10 @@ export interface Connector {
 export interface Brand {
   id: string;
   name: string;
-  audience?: string;
-  voice?: string;
-  values?: string;
+  persona?: string;
+  domain?: string;
+  brandVoice?: string;
+  angleTemplate?: string;
   skills: Skill[];
   connector: Connector;
 }
@@ -164,9 +165,14 @@ const initialTeam: TeamMember[] = [
 const initialBrand: Brand = {
   id: "brand",
   name: "Acme",
-  audience: "B2B marketing leaders at Series-B+ SaaS companies. Mostly VPs of marketing and growth — quantitative, time-poor, allergic to fluff.",
-  voice: "Confident and data-led. Conversational without being chummy. Never preachy. Short sentences. Strong verbs. No buzzwords we wouldn't say out loud.",
-  values: "Insight over reach. Signal over noise. We'd rather be useful to 1,000 people than viral to a million.",
+  persona:
+    "B2B marketing leaders at Series-B+ SaaS companies. Mostly VPs of marketing and growth — quantitative, time-poor, allergic to fluff.",
+  domain:
+    "AI and B2B marketing — the intersection where generative tools meet pipeline, attribution, and brand.",
+  brandVoice:
+    "Confident and data-led. Conversational without being chummy. Never preachy. Short sentences. Strong verbs. No buzzwords we wouldn't say out loud.",
+  angleTemplate:
+    "Lead with the second-order effects everyone else is missing. End with what your CMO should do Monday morning. Cite real teams, not vendor case studies.",
   connector: {
     type: "hubspot",
     status: "connected",
