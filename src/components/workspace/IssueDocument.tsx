@@ -50,16 +50,20 @@ export function IssueDocument({
           )}
         </div>
         <div className="flex items-center gap-2">
-          {historyCount > 0 && (
-            <button
-              onClick={() => setShowingHistory(true)}
-              className="inline-flex items-center gap-1.5 border border-line bg-paper px-2.5 py-1 text-[12px] text-ink-2 transition-colors hover:bg-veil hover:text-ink"
-              title={`${historyCount} previous version${historyCount === 1 ? "" : "s"}`}
-            >
-              History
+          <button
+            onClick={() => setShowingHistory(true)}
+            className="inline-flex items-center gap-1.5 border border-line bg-paper px-2.5 py-1 text-[12px] text-ink-2 transition-colors hover:bg-veil hover:text-ink"
+            title={
+              historyCount === 0
+                ? "No previous versions yet"
+                : `${historyCount} previous version${historyCount === 1 ? "" : "s"}`
+            }
+          >
+            History
+            {historyCount > 0 && (
               <span className="tabular text-[10px] text-ink-3">{historyCount}</span>
-            </button>
-          )}
+            )}
+          </button>
           {!readOnly && (
             <button
               onClick={() => setEditing(true)}
