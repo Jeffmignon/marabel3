@@ -47,6 +47,38 @@ export function StudioPane({ newsletter, issue, onCollapse }: StudioPaneProps) {
         <Section title="Identity">
           <StudioIdentity />
         </Section>
+
+        <Section title="History" defaultOpen>
+          <div className="px-4 pb-4">
+            {newsletter.issues
+              .filter((i) => i.id !== issue.id && i.status !== "in_progress")
+              .slice(0, 5)
+              .map((i) => (
+                <Link
+                  key={i.id}
+                  href={`/workspace/${newsletter.id}?issue=${i.id}`}
+                  className="flex items-baseline justify-between border-b border-line py-2 text-[13px] text-ink transition-colors last:border-0 hover:text-accent"
+                >
+                  <span>{i.name}</span>
+                  <span className="text-[11px] text-ink-3">{i.date}</span>
+                </Link>
+              ))}
+            {newsletter.issues.filter(
+              (i) => i.id !== issue.id && i.status !== "in_progress",
+            ).length === 0 && (
+              <div className="py-2 text-[12px] text-ink-3">
+                No past issues yet
+              </div>
+            )}
+            <Link
+              href="/"
+              className="mt-3 flex items-center justify-between border border-line bg-paper px-3 py-2 text-[12px] text-ink-2 transition-colors hover:bg-veil hover:text-ink"
+            >
+              <span className="font-medium">See all issues</span>
+              <span className="text-ink-3">→</span>
+            </Link>
+          </div>
+        </Section>
       </div>
     </aside>
   );
