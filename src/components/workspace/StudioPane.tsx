@@ -34,51 +34,18 @@ export function StudioPane({ newsletter, issue, onCollapse }: StudioPaneProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <Section title="Schedule" defaultOpen>
-          <StudioSchedule newsletter={newsletter} />
-        </Section>
-
-        <Section title="Connector" defaultOpen>
+        <ScopeGroup label="Brand · applies to all newsletters" tone="brand" />
+        <Section title="Connector" scope="brand" defaultOpen>
           <StudioConnector />
         </Section>
 
-        <Section title="Identity">
+        <Section title="Identity" scope="brand">
           <StudioIdentity />
         </Section>
 
-        <Section title="Past issues">
-          <div className="px-4 pb-6">
-            {newsletter.issues
-              .filter((i) => i.status !== "in_progress")
-              .slice(0, 5)
-              .map((i) => {
-                const isCurrentlyViewing = i.id === issue.id;
-                return (
-                  <Link
-                    key={i.id}
-                    href={`/workspace/${newsletter.id}?issue=${i.id}`}
-                    className={`flex items-baseline justify-between border-b border-line py-2 text-[13px] transition-colors last:border-0 ${
-                      isCurrentlyViewing
-                        ? "text-accent"
-                        : "text-ink hover:text-accent"
-                    }`}
-                  >
-                    <span>{i.name}</span>
-                    <span className="text-[11px] text-ink-3">{i.date}</span>
-                  </Link>
-                );
-              })}
-            {newsletter.issues.filter((i) => i.status !== "in_progress").length === 0 && (
-              <div className="py-2 text-[12px] text-ink-3">No past issues yet</div>
-            )}
-            <Link
-              href="/archives"
-              className="mt-3 flex items-center justify-between border border-line bg-paper px-3 py-2 text-[12px] text-ink-2 transition-colors hover:bg-veil hover:text-ink"
-            >
-              <span className="font-medium">See all archives</span>
-              <span className="text-ink-3">→</span>
-            </Link>
-          </div>
+        <ScopeGroup label="This newsletter only" tone="newsletter" />
+        <Section title="Schedule" scope="newsletter" defaultOpen>
+          <StudioSchedule newsletter={newsletter} />
         </Section>
       </div>
     </aside>
@@ -142,10 +109,12 @@ function StudioConnector() {
 function Section({
   title,
   defaultOpen,
+  scope,
   children,
 }: {
   title: string;
   defaultOpen?: boolean;
+  scope?: "brand" | "newsletter";
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(!!defaultOpen);
@@ -155,7 +124,16 @@ function Section({
         onClick={() => setOpen((o) => !o)}
         className="flex h-10 w-full items-center justify-between px-4 text-left transition-colors hover:bg-veil"
       >
-        <span className="text-[11px] uppercase tracking-[0.14em] text-ink-2">{title}</span>
+        <span className="flex items-center gap-2">
+          <span className="text-[11px] uppercase tracking-[0.14em] text-ink-2">
+            {title}
+          </span>
+          {scope === "brand" && (
+            <span className="bg-accent-tint px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-accent">
+              Brand
+            </span>
+          )}
+        </span>
         <span
           className={`text-[10px] text-ink-3 transition-transform ${open ? "rotate-90" : ""}`}
         >
@@ -163,6 +141,27 @@ function Section({
         </span>
       </button>
       {open && children}
+    </div>
+  );
+}
+
+function ScopeGroup({
+  label,
+  tone,
+}: {
+  label: string;
+  tone: "brand" | "newsletter";
+}) {
+  const bg = tone === "brand" ? "bg-accent-tint/40" : "bg-chrome";
+  const dotColor = tone === "brand" ? "bg-accent" : "bg-ink-3";
+  return (
+    <div
+      className={`flex items-center gap-1.5 border-b border-line px-4 py-1.5 ${bg}`}
+    >
+      <span className={`h-1 w-1 rounded-full ${dotColor}`} />
+      <span className="text-[9px] uppercase tracking-[0.16em] text-ink-2">
+        {label}
+      </span>
     </div>
   );
 }
