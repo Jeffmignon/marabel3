@@ -2,6 +2,8 @@
 
 import { useState, type ReactNode } from "react";
 import { AppShell } from "@/components/chrome/AppShell";
+import { StudioIdentity } from "@/components/workspace/StudioIdentity";
+import { StudioSchedule } from "@/components/workspace/StudioSchedule";
 import { useWorkspace, type TeamMember } from "@/context/WorkspaceContext";
 
 export default function SettingsPage() {
@@ -16,11 +18,41 @@ export default function SettingsPage() {
         </header>
 
         <AccountSection />
+        <IdentitySection />
+        <ScheduleSection />
         <ConnectorSection />
         <SecuritySection />
         <TeamSection />
       </div>
     </AppShell>
+  );
+}
+
+function IdentitySection() {
+  return (
+    <Section title="Identity">
+      <div className="max-w-[520px]">
+        <StudioIdentity />
+      </div>
+    </Section>
+  );
+}
+
+function ScheduleSection() {
+  const { newsletters } = useWorkspace();
+  const newsletter = newsletters[0];
+  if (!newsletter) return null;
+  return (
+    <Section
+      title="Schedule"
+      right={
+        <span className="text-[11px] text-ink-3">{newsletter.name}</span>
+      }
+    >
+      <div className="max-w-[420px] border border-line bg-paper">
+        <StudioSchedule newsletter={newsletter} />
+      </div>
+    </Section>
   );
 }
 

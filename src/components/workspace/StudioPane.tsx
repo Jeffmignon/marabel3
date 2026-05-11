@@ -71,6 +71,13 @@ export function StudioPane({ newsletter, issue, onCollapse }: StudioPaneProps) {
             {newsletter.issues.filter((i) => i.status !== "in_progress").length === 0 && (
               <div className="py-2 text-[12px] text-ink-3">No past issues yet</div>
             )}
+            <Link
+              href="/archives"
+              className="mt-3 flex items-center justify-between border border-line bg-paper px-3 py-2 text-[12px] text-ink-2 transition-colors hover:bg-veil hover:text-ink"
+            >
+              <span className="font-medium">See all archives</span>
+              <span className="text-ink-3">→</span>
+            </Link>
           </div>
         </Section>
       </div>
