@@ -16,7 +16,7 @@ interface StudioPaneProps {
 
 export function StudioPane({ newsletter, issue, onCollapse }: StudioPaneProps) {
   return (
-    <aside className="flex h-full w-[320px] shrink-0 flex-col border-l border-line bg-paper">
+    <aside className="flex h-full w-[320px] shrink-0 flex-col border-l border-line bg-chrome">
       <div className="flex h-11 shrink-0 items-center justify-between border-b border-line px-4">
         <div className="flex items-center gap-2">
           {onCollapse && (
@@ -29,23 +29,23 @@ export function StudioPane({ newsletter, issue, onCollapse }: StudioPaneProps) {
               <ChevronRight />
             </button>
           )}
-          <span className="text-[11px] uppercase tracking-[0.14em] text-ink-3">Studio</span>
+          <span className="text-[11px] uppercase tracking-[0.14em] text-ink-3">
+            Studio · {newsletter.name}
+          </span>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <ScopeGroup label="Brand · applies to all newsletters" tone="brand" />
-        <Section title="Connector" scope="brand" defaultOpen>
+        <Section title="Schedule" defaultOpen>
+          <StudioSchedule newsletter={newsletter} />
+        </Section>
+
+        <Section title="Connector" defaultOpen>
           <StudioConnector />
         </Section>
 
-        <Section title="Identity" scope="brand">
+        <Section title="Identity">
           <StudioIdentity />
-        </Section>
-
-        <ScopeGroup label="This newsletter only" tone="newsletter" />
-        <Section title="Schedule" scope="newsletter" defaultOpen>
-          <StudioSchedule newsletter={newsletter} />
         </Section>
       </div>
     </aside>
@@ -109,12 +109,10 @@ function StudioConnector() {
 function Section({
   title,
   defaultOpen,
-  scope,
   children,
 }: {
   title: string;
   defaultOpen?: boolean;
-  scope?: "brand" | "newsletter";
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(!!defaultOpen);
@@ -124,15 +122,8 @@ function Section({
         onClick={() => setOpen((o) => !o)}
         className="flex h-10 w-full items-center justify-between px-4 text-left transition-colors hover:bg-veil"
       >
-        <span className="flex items-center gap-2">
-          <span className="text-[11px] uppercase tracking-[0.14em] text-ink-2">
-            {title}
-          </span>
-          {scope === "brand" && (
-            <span className="bg-accent-tint px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-accent">
-              Brand
-            </span>
-          )}
+        <span className="text-[11px] uppercase tracking-[0.14em] text-ink-2">
+          {title}
         </span>
         <span
           className={`text-[10px] text-ink-3 transition-transform ${open ? "rotate-90" : ""}`}
@@ -141,27 +132,6 @@ function Section({
         </span>
       </button>
       {open && children}
-    </div>
-  );
-}
-
-function ScopeGroup({
-  label,
-  tone,
-}: {
-  label: string;
-  tone: "brand" | "newsletter";
-}) {
-  const bg = tone === "brand" ? "bg-accent-tint/40" : "bg-chrome";
-  const dotColor = tone === "brand" ? "bg-accent" : "bg-ink-3";
-  return (
-    <div
-      className={`flex items-center gap-1.5 border-b border-line px-4 py-1.5 ${bg}`}
-    >
-      <span className={`h-1 w-1 rounded-full ${dotColor}`} />
-      <span className="text-[9px] uppercase tracking-[0.16em] text-ink-2">
-        {label}
-      </span>
     </div>
   );
 }
