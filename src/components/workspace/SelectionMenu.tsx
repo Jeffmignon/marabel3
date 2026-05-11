@@ -21,20 +21,20 @@ export function SelectionMenu({ rect, onComment, onRewrite }: SelectionMenuProps
         transform: "translateX(-50%)",
         zIndex: 60,
       }}
-      className="flex items-center gap-px border border-line bg-paper shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
+      className="flex items-center gap-px overflow-hidden rounded-sm bg-ink text-paper shadow-[0_8px_24px_rgba(0,0,0,0.28)] ring-1 ring-black/10"
     >
       <button
         onClick={onComment}
-        className="px-3 py-1.5 text-[12px] font-medium text-ink-2 transition-colors hover:bg-veil hover:text-ink"
+        className="px-3 py-1.5 text-[12px] font-medium transition-colors hover:bg-white/10"
       >
-        Comment
+        💬 Comment
       </button>
-      <span className="h-4 w-px bg-line" />
+      <span className="h-4 w-px bg-white/20" />
       <button
         onClick={onRewrite}
-        className="px-3 py-1.5 text-[12px] font-medium text-accent transition-colors hover:bg-accent-tint"
+        className="px-3 py-1.5 text-[12px] font-medium transition-colors hover:bg-white/10"
       >
-        Ask Marabel to rewrite
+        ✨ Ask Marabel to rewrite
       </button>
     </div>
   );
