@@ -7,7 +7,6 @@ import { useWorkspace } from "@/context/WorkspaceContext";
 import { ChevronRight } from "./Icons";
 import { StudioSchedule } from "./StudioSchedule";
 import { StudioIdentity } from "./StudioIdentity";
-import { StudioReviewers } from "./StudioReviewers";
 
 interface StudioPaneProps {
   newsletter: Newsletter;
@@ -35,10 +34,6 @@ export function StudioPane({ newsletter, issue, onCollapse }: StudioPaneProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <Section title="Approval" defaultOpen>
-          <StudioReviewers newsletter={newsletter} issue={issue} />
-        </Section>
-
         <Section title="Schedule" defaultOpen>
           <StudioSchedule newsletter={newsletter} />
         </Section>
